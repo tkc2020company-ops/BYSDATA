@@ -93,6 +93,10 @@
   .answer-view b { color: var(--answered); }
   .empty { color: var(--soft); text-align: center; padding: 30px 0; }
   .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--ground); padding: 10px 18px; border-radius: 999px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; max-width: 90vw; text-align: center; }
+  .audio-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; background: var(--accent); color: var(--accent-ink); padding: 10px 18px; display: flex; align-items: center; gap: 10px; box-shadow: 0 -2px 12px rgba(0,0,0,.15); }
+  .audio-bar-title { flex: 1; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .audio-bar .btn { flex: none; padding: 6px 12px; font-size: 12.5px; }
+  #audio-bar-speed { min-width: 44px; }
   .toast.show { opacity: 1; }
   .foot-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
   .entry.just-added { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -175,6 +179,12 @@
 
 <div class="toast" id="toast"></div>
 
+<div class="audio-bar" id="audio-bar" hidden>
+  <span class="audio-bar-title" id="audio-bar-title"></span>
+  <button type="button" class="btn on-accent" id="audio-bar-speed">1x</button>
+  <button type="button" class="btn on-accent" id="audio-bar-stop">⏹ Dừng</button>
+</div>
+
 <script>
 (function () {
   // Link web app Apps Script (hậu trường) — đổi ở đây nếu bạn triển khai lại thành link mới.
@@ -218,26 +228,64 @@
 
   // ---------------- Đọc văn bản (Web Speech API có sẵn của trình duyệt) ----------------
   let speakingBtn = null;
+  let speakingItem = null;
+  const SPEED_STEPS = [0.75, 1, 1.25, 1.5, 2];
+  let speechRate = Number(localStorage.getItem("speech_rate")) || 1;
+  if (!SPEED_STEPS.includes(speechRate)) speechRate = 1;
+
   function itemToSpeechText(it) {
     const parts = [it.title, it.fact, ...(it.deep || [])];
     (it.faq || []).forEach(f => { parts.push("Hỏi: " + f.q); parts.push("Đáp: " + f.a); });
     return parts.filter(Boolean).join(". ");
   }
   function resetSpeakButton(btn) { if (btn) btn.textContent = "🔊 Đọc"; }
+  function updateAudioBar() {
+    const bar = document.getElementById("audio-bar");
+    if (speakingItem) {
+      bar.hidden = false;
+      document.getElementById("audio-bar-title").textContent = "Đang đọc: " + speakingItem.title;
+      document.getElementById("audio-bar-speed").textContent = speechRate + "x";
+    } else {
+      bar.hidden = true;
+    }
+  }
+  function startUtterance(item, btn) {
+    const utter = new SpeechSynthesisUtterance(itemToSpeechText(item));
+    utter.lang = "vi-VN";
+    utter.rate = speechRate;
+    utter.onend = () => { resetSpeakButton(btn); if (speakingBtn === btn) { speakingBtn = null; speakingItem = null; updateAudioBar(); } };
+    utter.onerror = () => { resetSpeakButton(btn); if (speakingBtn === btn) { speakingBtn = null; speakingItem = null; updateAudioBar(); } };
+    speakingBtn = btn;
+    speakingItem = item;
+    btn.textContent = "⏹ Dừng";
+    window.speechSynthesis.speak(utter);
+    updateAudioBar();
+  }
   function toggleSpeak(item, btn) {
     const isSameAndSpeaking = speakingBtn === btn && window.speechSynthesis.speaking;
     window.speechSynthesis.cancel(); // dừng câu đang đọc (nếu có), kể cả của thẻ khác
     resetSpeakButton(speakingBtn);
-    speakingBtn = null;
+    speakingBtn = null; speakingItem = null; updateAudioBar();
     if (isSameAndSpeaking) return; // bấm lần 2 trên cùng thẻ = chỉ dừng lại
-    const utter = new SpeechSynthesisUtterance(itemToSpeechText(item));
-    utter.lang = "vi-VN";
-    utter.onend = () => { resetSpeakButton(btn); if (speakingBtn === btn) speakingBtn = null; };
-    utter.onerror = () => { resetSpeakButton(btn); if (speakingBtn === btn) speakingBtn = null; };
-    speakingBtn = btn;
-    btn.textContent = "⏹ Dừng";
-    window.speechSynthesis.speak(utter);
+    startUtterance(item, btn);
   }
+  document.getElementById("audio-bar-stop").addEventListener("click", () => {
+    window.speechSynthesis.cancel();
+    resetSpeakButton(speakingBtn);
+    speakingBtn = null; speakingItem = null; updateAudioBar();
+  });
+  document.getElementById("audio-bar-speed").addEventListener("click", () => {
+    const idx = SPEED_STEPS.indexOf(speechRate);
+    speechRate = SPEED_STEPS[(idx + 1) % SPEED_STEPS.length];
+    try { localStorage.setItem("speech_rate", speechRate); } catch (e) {}
+    if (speakingItem) {
+      const item = speakingItem, btn = speakingBtn;
+      window.speechSynthesis.cancel();
+      startUtterance(item, btn); // đổi tốc độ giữa chừng = đọc lại từ đầu ở tốc độ mới (giới hạn của trình duyệt)
+    } else {
+      updateAudioBar();
+    }
+  });
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
