@@ -107,6 +107,16 @@
   .dialog-close { background: none; border: none; font-size: 22px; line-height: 1; color: var(--soft); cursor: pointer; padding: 4px 8px; }
   .dialog-close:hover { color: var(--ink); }
   .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  .summary-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 24px; }
+  .summary-card { background: var(--accent-soft); border: 1px solid var(--accent); border-radius: 14px; padding: 16px 18px; }
+  .summary-card h3 { font-size: 14.5px; margin: 0 0 10px; color: var(--accent); }
+  .summary-row { margin-bottom: 10px; }
+  .summary-row:last-child { margin-bottom: 0; }
+  .summary-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--accent); display: block; margin-bottom: 2px; }
+  .summary-row p { margin: 0; font-size: 13px; color: var(--ink); }
+  @media (max-width: 560px) {
+    .summary-grid { grid-template-columns: 1fr; }
+  }
   @media (max-width: 480px) {
     .date { margin-left: 0; }
     .field-row { grid-template-columns: 1fr; }
@@ -156,6 +166,22 @@
         <span class="count-live">Hiện <b id="content-count">0</b> / <span id="content-total">0</span></span>
       </div>
       <div id="content-head-row"></div>
+    </div>
+    <div class="summary-grid">
+      <div class="summary-card">
+        <h3>🌽 Cát sắn — Tóm tắt nhanh</h3>
+        <div class="summary-row"><span class="summary-label">Là gì</span><p>Cát vệ sinh cho mèo làm từ tinh bột sắn (khoai mì) cấp thực phẩm đã qua chế biến — là sản phẩm công nghiệp như cát khoáng, không phải phụ phẩm bỏ đi hay bí quyết cổ truyền.</p></div>
+        <div class="summary-row"><span class="summary-label">Vì sao có dòng này</span><p>Hạt mịn tới mức gần như không thấy hạt, không bụi; vón cục bằng cơ chế màng tinh bột trương nở nên chắc, ít vụn hơn cát đậu nành.</p></div>
+        <div class="summary-row"><span class="summary-label">Dùng sao cho đúng</span><p>Đừng đổ mỏng theo thói quen cũ dùng cát khoáng — cát sắn nhẹ, mịn hơn, đổ mỏng dễ vón không chắc và dính đáy khay.</p></div>
+        <div class="summary-row"><span class="summary-label">Vấn đề cần biết trước</span><p>Cả ngành đều gặp bài toán chống mốc, đặc biệt khắc nghiệt mùa nồm ẩm miền Bắc. Giá cũng cao hơn cát khoáng và cát đậu nành thường vì nguyên liệu đắt hơn.</p></div>
+      </div>
+      <div class="summary-card">
+        <h3>🫘 Cát đậu nành — Tóm tắt nhanh</h3>
+        <div class="summary-row"><span class="summary-label">Là gì</span><p>Cát vệ sinh cho mèo làm từ bã đậu nành — phụ phẩm sau khi ép sữa đậu/đậu phụ, không phải hạt đậu nành nguyên chất. Mới xuất hiện khoảng năm 2000, không phải công thức lâu đời.</p></div>
+        <div class="summary-row"><span class="summary-label">Vì sao có dòng này</span><p>Hạt to, nhẹ, thể tích lớn — đổ lượng vừa phải đã đầy khay, hợp nhà nuôi nhiều mèo muốn tiết kiệm lượng cát phải mua.</p></div>
+        <div class="summary-row"><span class="summary-label">Dùng sao cho đúng</span><p>Chỉ hút nước, không tự khử mùi — mùi thơm là do hương liệu thêm vào. Không nên dùng loại nguyên chất 100% dài hạn vì chất lượng hàng nguyên chất trên thị trường không đồng đều.</p></div>
+        <div class="summary-row"><span class="summary-label">Vấn đề cần biết trước</span><p>Vón không chắc bằng cát khoáng/cát sắn, dễ dính đáy khay — là điểm yếu bản chất của nguyên liệu. Khả năng khử mùi cũng giảm rõ vào mùa hè nóng ẩm.</p></div>
+      </div>
     </div>
     <div id="content-list"><p class="empty" id="content-loading">Đang tải nội dung… (Apps Script đôi khi mất vài giây)</p></div>
   </section>
