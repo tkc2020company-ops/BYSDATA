@@ -47,7 +47,9 @@
   .phase-head { display: flex; align-items: center; gap: 10px; margin: 26px 0 4px; }
   .phase-head:first-child { margin-top: 0; }
   .phase-num { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 700; background: var(--accent); color: var(--accent-ink); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; }
-  .phase-head h2 { font-size: 15.5px; margin: 0; }
+  .phase-head h2, .phase-head h3 { font-size: 15.5px; margin: 0; font-weight: 700; }
+  .product-group-head { font-size: 19px; margin: 30px 0 8px; padding-bottom: 8px; border-bottom: 2px solid var(--accent); }
+  .product-group-head:first-child { margin-top: 0; }
   .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
   .card h2, .card h3 { font-size: 15px; margin: 0 0 8px; }
   .item-top { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
@@ -221,6 +223,20 @@
   let PHASE_INFO = {};
   let PRODUCT_LABEL = {};
   const HOOK_TYPES = ["Phản bác giá", "Test làm quá tay", "Gọi đúng nỗi khổ", "Khám phá cá nhân", "Kiến thức/mẹo"];
+  // Tên 6 bước dễ hiểu hơn bản gốc từ Apps Script — ghi đè trong applyBoot().
+  const PHASE_LABELS = {
+    1: "Cát này thật ra làm từ gì",
+    2: "Vì sao nó khác cát khoáng",
+    3: "Những ngộ nhận cần đính chính",
+    4: "Điểm yếu thật & cách dùng cho đúng",
+    5: "Mẹo nâng cao & bán thêm",
+    6: "Chúng ta giải quyết được gì mà thị trường còn tồn đọng",
+  };
+  const PRODUCT_GROUPS = [
+    { key: "soy", label: "🫘 Cát đậu nành" },
+    { key: "cassava", label: "🌽 Cát sắn" },
+    { key: "both", label: "🔀 So sánh & kết hợp 2 loại" },
+  ];
   const STATUS_OPTIONS = [
     { value: "Chưa giao", cls: "todo" },
     { value: "Đang làm", cls: "doing" },
@@ -504,14 +520,26 @@
     document.getElementById("content-count").textContent = filtered.length;
     document.getElementById("content-total").textContent = ITEMS.length;
 
-    const byPhase = {};
-    filtered.forEach(it => { const p = it.phase || 6; (byPhase[p] = byPhase[p] || []).push(it); });
-    const phases = Object.keys(byPhase).map(Number).sort((a, b) => a - b);
+    // Nhóm theo sản phẩm trước (đậu nành / sắn / cả hai), rồi mới tới bước —
+    // tránh trộn lẫn 2 sản phẩm trong cùng 1 bước như trước đây.
+    const groups = PRODUCT_GROUPS
+      .filter(g => filters.product === "all" || filters.product === g.key)
+      .map(g => ({ ...g, items: filtered.filter(it => it.product === g.key) }))
+      .filter(g => g.items.length);
+
     const list = document.getElementById("content-list");
-    list.innerHTML = phases.map(p => `
-      <div class="phase-head"><span class="phase-num">${p}</span><h2>${esc(PHASE_INFO[p] || "Khác")}</h2></div>
-      ${byPhase[p].map(cardHTML).join("")}
-    `).join("") || `<p class="empty">Không có thẻ nào khớp bộ lọc.</p>`;
+    list.innerHTML = groups.map(g => {
+      const byPhase = {};
+      g.items.forEach(it => { const p = it.phase || 6; (byPhase[p] = byPhase[p] || []).push(it); });
+      const phases = Object.keys(byPhase).map(Number).sort((a, b) => a - b);
+      return `
+        <h2 class="product-group-head">${esc(g.label)}</h2>
+        ${phases.map(p => `
+          <div class="phase-head"><span class="phase-num">${p}</span><h3>${esc(PHASE_INFO[p] || "Khác")}</h3></div>
+          ${byPhase[p].map(cardHTML).join("")}
+        `).join("")}
+      `;
+    }).join("") || `<p class="empty">Không có thẻ nào khớp bộ lọc.</p>`;
 
     list.querySelectorAll(".ask-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -816,7 +844,7 @@
   function applyBoot(boot) {
     ITEMS = boot.contentItems;
     ENTRIES = boot.entries;
-    PHASE_INFO = boot.phaseInfo;
+    PHASE_INFO = PHASE_LABELS; // ghi đè tên bước của Apps Script bằng bộ tên dễ hiểu hơn ở trên
     PRODUCT_LABEL = boot.productLabel;
     renderContent();
     renderQna();
