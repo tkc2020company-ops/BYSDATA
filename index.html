@@ -753,21 +753,42 @@
   // ---------------- Khởi động ----------------
   // Khung trang (tab, nút quay lại) hiện ngay; chỉ danh sách bên trong chờ tải dữ liệu,
   // để dù Apps Script tải chậm, người dùng vẫn thao tác được (chuyển tab, xem form...).
+  //
+  // Apps Script (miễn phí) đôi khi rất chậm (5-40+ giây) hoặc lỗi tạm thời — không phải
+  // do trang này. Để trang KHÔNG BAO GIỜ trống trơn với người đã từng ghé qua: lưu tạm
+  // dữ liệu vào máy họ (localStorage), lần sau mở lại hiện NGAY dữ liệu cũ trong lúc âm
+  // thầm tải bản mới ở nền — giống cách nhiều app di động vẫn hiện được nội dung cũ khi
+  // mất mạng tạm thời.
+  const CACHE_KEY = "koc_bootstrap_cache_v1";
+  function applyBoot(boot) {
+    ITEMS = boot.contentItems;
+    ENTRIES = boot.entries;
+    PHASE_INFO = boot.phaseInfo;
+    PRODUCT_LABEL = boot.productLabel;
+    renderContent();
+    renderQna();
+  }
   function loadBootstrap() {
-    document.getElementById("content-list").innerHTML = `<p class="empty">Đang tải nội dung… (Apps Script đôi khi mất vài giây)</p>`;
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch (e) {}
+
+    if (cached) {
+      applyBoot(cached.data);
+      tryAutoLogin();
+    } else {
+      document.getElementById("content-list").innerHTML = `<p class="empty">Đang tải nội dung… (Apps Script đôi khi mất vài giây, lần đầu ghé trang sẽ hơi chậm)</p>`;
+    }
+
     apiGet("bootstrap")
       .then(boot => {
-        ITEMS = boot.contentItems;
-        ENTRIES = boot.entries;
-        PHASE_INFO = boot.phaseInfo;
-        PRODUCT_LABEL = boot.productLabel;
-        renderContent();
-        renderQna();
-        return tryAutoLogin();
+        try { localStorage.setItem(CACHE_KEY, JSON.stringify({ data: boot, savedAt: Date.now() })); } catch (e) {}
+        applyBoot(boot);
+        if (!cached) return tryAutoLogin();
       })
       .catch(err => {
         console.error(err);
-        document.getElementById("content-list").innerHTML = `<p class="empty">Không tải được nội dung (Google đang phản hồi chậm).</p>
+        if (cached) return; // đã hiện dữ liệu cũ rồi, không cần báo lỗi làm phiền
+        document.getElementById("content-list").innerHTML = `<p class="empty">Google đang phản hồi rất chậm — không phải lỗi ở trang này, thử lại sau chút.</p>
           <div style="text-align:center"><button type="button" class="btn primary" id="btn-retry-bootstrap">Thử lại</button></div>`;
         document.getElementById("btn-retry-bootstrap").addEventListener("click", loadBootstrap);
       });
