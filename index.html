@@ -249,9 +249,36 @@
       bar.hidden = true;
     }
   }
-  function startUtterance(item, btn) {
+  // Nhiều máy (đặc biệt Windows chưa cài gói tiếng Việt) không có sẵn giọng đọc
+  // tiếng Việt — nếu cứ đọc, máy sẽ dùng giọng tiếng Anh "đánh vần" chữ Việt,
+  // nghe sai/ngáo hoàn toàn. Nên phải TÌM ĐÚNG giọng vi-VN trước, có mới đọc.
+  let vietnameseVoicePromise = null;
+  function findVietnameseVoice() {
+    if (vietnameseVoicePromise) return vietnameseVoicePromise;
+    vietnameseVoicePromise = new Promise(resolve => {
+      const pick = () => {
+        const voices = window.speechSynthesis.getVoices();
+        resolve(voices.find(v => v.lang && v.lang.toLowerCase().startsWith("vi")) || null);
+      };
+      const existing = window.speechSynthesis.getVoices();
+      if (existing.length) { pick(); return; }
+      window.speechSynthesis.onvoiceschanged = pick;
+      setTimeout(pick, 1500); // một số trình duyệt không bắn sự kiện voiceschanged
+    });
+    return vietnameseVoicePromise;
+  }
+
+  async function startUtterance(item, btn) {
+    const viVoice = await findVietnameseVoice();
+    if (!viVoice) {
+      toast("Máy này chưa có giọng đọc tiếng Việt nên không đọc được (tránh đọc sai bằng giọng Anh). Thử trên điện thoại, hoặc cài thêm giọng Việt cho Windows.");
+      resetSpeakButton(btn);
+      speakingBtn = null; speakingItem = null; updateAudioBar();
+      return;
+    }
     const utter = new SpeechSynthesisUtterance(itemToSpeechText(item));
-    utter.lang = "vi-VN";
+    utter.voice = viVoice;
+    utter.lang = viVoice.lang;
     utter.rate = speechRate;
     utter.onend = () => { resetSpeakButton(btn); if (speakingBtn === btn) { speakingBtn = null; speakingItem = null; updateAudioBar(); } };
     utter.onerror = () => { resetSpeakButton(btn); if (speakingBtn === btn) { speakingBtn = null; speakingItem = null; updateAudioBar(); } };
