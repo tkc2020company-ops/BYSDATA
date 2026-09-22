@@ -216,6 +216,29 @@
     return found ? found.cls : "todo";
   }
 
+  // ---------------- Đọc văn bản (Web Speech API có sẵn của trình duyệt) ----------------
+  let speakingBtn = null;
+  function itemToSpeechText(it) {
+    const parts = [it.title, it.fact, ...(it.deep || [])];
+    (it.faq || []).forEach(f => { parts.push("Hỏi: " + f.q); parts.push("Đáp: " + f.a); });
+    return parts.filter(Boolean).join(". ");
+  }
+  function resetSpeakButton(btn) { if (btn) btn.textContent = "🔊 Đọc"; }
+  function toggleSpeak(item, btn) {
+    const isSameAndSpeaking = speakingBtn === btn && window.speechSynthesis.speaking;
+    window.speechSynthesis.cancel(); // dừng câu đang đọc (nếu có), kể cả của thẻ khác
+    resetSpeakButton(speakingBtn);
+    speakingBtn = null;
+    if (isSameAndSpeaking) return; // bấm lần 2 trên cùng thẻ = chỉ dừng lại
+    const utter = new SpeechSynthesisUtterance(itemToSpeechText(item));
+    utter.lang = "vi-VN";
+    utter.onend = () => { resetSpeakButton(btn); if (speakingBtn === btn) speakingBtn = null; };
+    utter.onerror = () => { resetSpeakButton(btn); if (speakingBtn === btn) speakingBtn = null; };
+    speakingBtn = btn;
+    btn.textContent = "⏹ Dừng";
+    window.speechSynthesis.speak(utter);
+  }
+
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
   // Apps Script thỉnh thoảng trả về trang lỗi HTML của Google thay vì JSON
@@ -349,6 +372,7 @@
       </details>
       <div class="card-actions">
         <button type="button" class="btn ghost ask-btn" data-title="${esc(it.title)}">❓ Đặt câu hỏi về mục này</button>
+        <button type="button" class="btn ghost speak-btn" data-id="${it.id}" hidden>🔊 Đọc</button>
       </div>
       ${canEdit ? `<div class="admin-block">
         <div class="status-row">
@@ -396,6 +420,16 @@
         document.getElementById("submit-card").scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
+
+    if ("speechSynthesis" in window) {
+      list.querySelectorAll(".speak-btn").forEach(btn => {
+        btn.hidden = false;
+        btn.addEventListener("click", () => {
+          const item = ITEMS.find(i => i.id === btn.dataset.id);
+          toggleSpeak(item, btn);
+        });
+      });
+    }
 
     if (canEdit) {
       list.querySelectorAll(".card").forEach(card => {
