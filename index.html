@@ -4,22 +4,607 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Hỏi Đáp KOC — Cát Đậu Nành &amp; Cát Sắn</title>
-<meta http-equiv="refresh" content="0; url=https://script.google.com/macros/s/AKfycbz8tCYFIKaLaBfdNQRa9WmC7fzxH0rhgv3FnvbAzeXSYXbV9JHIqJxHYfh2xpleMaeeSA/exec">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <style>
-  html, body { margin: 0; height: 100%; background: #1d2620; color: #fff; font: 15px "Segoe UI", system-ui, sans-serif; }
-  .wrap { height: 100%; display: grid; place-items: center; text-align: center; padding: 20px; }
-  a { color: #fff; }
+  :root {
+    --ground: #f5f6f3; --surface: #ffffff; --ink: #1d2620; --muted: #57645c; --soft: #8b978f;
+    --line: #dfe4df; --accent: #35594e; --accent-ink: #ffffff; --accent-soft: #e4ece8;
+    --new: #b45309; --new-soft: #fdf1de; --answered: #1f7a4d; --answered-soft: #e5f5ea;
+    --danger: #b3261e; --danger-soft: #fbe9e7; --focus: #2f6fed;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: "Public Sans", system-ui, sans-serif; }
+  .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 18px 60px; }
+  header { background: var(--accent); color: var(--accent-ink); padding: 18px; margin-bottom: 22px; }
+  header .inner { max-width: 760px; margin: 0 auto; }
+  header .top-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  header .eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: .8; }
+  header h1 { font-size: 24px; margin: 4px 0 6px; }
+  header p { font-size: 13.5px; opacity: .9; max-width: 56ch; margin: 0; }
+  .auth { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .auth .btn { font-size: 12.5px; padding: 7px 12px; }
+  .btn.on-accent { background: transparent; border: 1px solid rgba(255,255,255,.55); color: #fff; }
+  .login-form { display: none; gap: 6px; margin-top: 10px; }
+  .login-form.show { display: flex; flex-wrap: wrap; }
+  .login-form input { border-radius: 8px; border: 1px solid var(--line); padding: 7px 10px; font: inherit; font-size: 13px; }
+  nav.tabs { display: flex; gap: 6px; margin-bottom: 18px; flex-wrap: wrap; }
+  nav.tabs button { font: inherit; font-size: 13.5px; font-weight: 700; background: var(--surface); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+  nav.tabs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
+  section.tab-panel { display: none; }
+  section.tab-panel.active { display: block; }
+  .content-head-row { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+  .phase-head { display: flex; align-items: center; gap: 10px; margin: 26px 0 4px; }
+  .phase-head:first-child { margin-top: 0; }
+  .phase-num { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 700; background: var(--accent); color: var(--accent-ink); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+  .phase-head h2 { font-size: 15.5px; margin: 0; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 14px; }
+  .card h2, .card h3 { font-size: 15px; margin: 0 0 8px; }
+  .item-top { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; flex-wrap: wrap; }
+  .tag { font-size: 10px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
+  .hook-pill { font-size: 10.5px; font-weight: 600; background: var(--ground); border: 1px solid var(--line); padding: 2px 8px; border-radius: 999px; }
+  .status-chip { font-size: 10px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; margin-left: auto; }
+  .status-chip.todo { background: var(--new-soft); color: var(--new); }
+  .status-chip.doing { background: #e4ece8; color: var(--accent); }
+  .status-chip.done { background: var(--answered-soft); color: var(--answered); }
+  .fact { font-size: 13.5px; color: var(--muted); margin: 0 0 8px; }
+  .ref-image { max-width: 100%; border-radius: 9px; margin-bottom: 10px; display: block; }
+  details.more { font-size: 12.5px; color: var(--muted); margin-bottom: 10px; }
+  details.more summary { cursor: pointer; font-weight: 700; color: var(--soft); font-size: 11.5px; text-transform: uppercase; letter-spacing: .05em; }
+  details.more .more-body { display: grid; gap: 8px; padding-top: 8px; }
+  details.more .k { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--soft); }
+  .card-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .field { margin-bottom: 12px; }
+  .field label { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--soft); display: block; margin-bottom: 5px; }
+  .field input, .field textarea, .field select { width: 100%; border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; font: inherit; font-size: 14px; background: var(--ground); color: var(--ink); }
+  .field textarea { min-height: 70px; resize: vertical; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn { font: inherit; font-weight: 600; border-radius: 9px; padding: 9px 16px; cursor: pointer; border: 1px solid transparent; font-size: 13.5px; }
+  .btn.primary { background: var(--accent); color: var(--accent-ink); }
+  .btn.ghost { background: transparent; border: 1px solid var(--line); color: var(--ink); }
+  .btn.danger { background: var(--danger-soft); color: var(--danger); border: none; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .admin-block { border-top: 1px dashed var(--line); margin-top: 12px; padding-top: 12px; display: grid; gap: 10px; }
+  .admin-block .status-row { display: flex; align-items: center; gap: 8px; }
+  .admin-block select.status-select { width: auto; font-size: 12.5px; padding: 6px 9px; }
+  .note-box { border: 1px dashed var(--focus); border-radius: 8px; padding: 8px; display: grid; gap: 4px; }
+  .note-box label { font-size: 10.5px; font-weight: 700; color: var(--focus); text-transform: uppercase; letter-spacing: .05em; }
+  .note-box textarea { border: none; background: transparent; padding: 0; font-size: 12.5px; min-height: 40px; }
+  #q-list { display: grid; gap: 14px; }
+  .entry-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+  .chip { font-size: 10.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; padding: 3px 10px; border-radius: 999px; }
+  .chip.new { background: var(--new-soft); color: var(--new); }
+  .chip.answered { background: var(--answered-soft); color: var(--answered); }
+  .koc-name { font-weight: 700; }
+  .date { margin-left: auto; font-size: 12px; color: var(--soft); }
+  .question { font-size: 14.5px; margin-bottom: 8px; }
+  .item-ref { font-size: 12px; color: var(--muted); background: var(--ground); border-radius: 8px; padding: 5px 9px; display: inline-block; margin-bottom: 8px; }
+  .answer-view { font-size: 13.5px; background: var(--answered-soft); border-radius: 9px; padding: 9px 11px; margin-top: 6px; }
+  .answer-view b { color: var(--answered); }
+  .empty { color: var(--soft); text-align: center; padding: 30px 0; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: var(--ground); padding: 10px 18px; border-radius: 999px; font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .2s; z-index: 60; max-width: 90vw; text-align: center; }
+  .toast.show { opacity: 1; }
+  .foot-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+  .entry.just-added { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .overlay { position: fixed; inset: 0; background: rgba(10,14,11,.5); display: grid; place-items: center; padding: 20px; z-index: 80; }
+  .dialog { background: var(--surface); border-radius: 14px; padding: 22px; max-width: 480px; width: 100%; max-height: 88vh; overflow: auto; display: grid; gap: 12px; }
+  .dialog h2 { font-size: 18px; margin: 0; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  #app-loading { text-align: center; padding: 60px 20px; color: var(--soft); }
+  @media (max-width: 480px) {
+    .date { margin-left: 0; }
+    .field-row { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div>
-    <p>Đang mở Hỏi Đáp KOC…</p>
-    <p><a href="https://script.google.com/macros/s/AKfycbz8tCYFIKaLaBfdNQRa9WmC7fzxH0rhgv3FnvbAzeXSYXbV9JHIqJxHYfh2xpleMaeeSA/exec">Không tự chuyển? Bấm vào đây</a></p>
+<header>
+  <div class="inner">
+    <div class="top-row">
+      <div>
+        <div class="eyebrow">Cát Đậu Nành &amp; Cát Sắn</div>
+        <h1>Hỏi Đáp KOC</h1>
+        <p>Lướt kiến thức sản phẩm bên dưới, đặt câu hỏi ngay dưới thẻ liên quan — bên mình trả lời trực tiếp tại đây.</p>
+      </div>
+      <div class="auth" id="auth"></div>
+    </div>
   </div>
+</header>
+
+<div class="wrap" id="app-wrap" hidden>
+  <nav class="tabs" id="tabs">
+    <button type="button" data-tab="content" aria-pressed="true">Kiến thức sản phẩm</button>
+    <button type="button" data-tab="qna" aria-pressed="false">Hỏi đáp (<span id="qna-count">0</span>)</button>
+  </nav>
+
+  <section class="tab-panel active" id="tab-content">
+    <div class="content-head-row" id="content-head-row"></div>
+    <div id="content-list"></div>
+  </section>
+
+  <section class="tab-panel" id="tab-qna">
+    <div class="card" id="submit-card">
+      <h2>Đặt câu hỏi mới</h2>
+      <div class="field"><label for="f-koc">Tên bạn</label><input id="f-koc" placeholder="Vd: Bé Mun TV"></div>
+      <div class="field"><label for="f-question">Câu hỏi</label><textarea id="f-question" placeholder="Bạn muốn hỏi gì?"></textarea></div>
+      <div class="field"><label for="f-itemref">Liên quan tới nội dung nào (không bắt buộc)</label>
+        <input id="f-itemref" list="item-titles-list" placeholder="Gõ để tìm…">
+        <datalist id="item-titles-list"></datalist>
+      </div>
+      <button type="button" class="btn primary" id="btn-submit">Gửi câu hỏi</button>
+    </div>
+
+    <div id="q-list"></div>
+  </section>
 </div>
+
+<div class="wrap" id="app-loading"><p>Đang tải…</p></div>
+<div class="wrap" id="app-error" hidden><p class="empty">Không tải được dữ liệu. Kiểm tra kết nối mạng và tải lại trang.</p></div>
+
+<div class="toast" id="toast"></div>
+
 <script>
-  location.replace("https://script.google.com/macros/s/AKfycbz8tCYFIKaLaBfdNQRa9WmC7fzxH0rhgv3FnvbAzeXSYXbV9JHIqJxHYfh2xpleMaeeSA/exec");
+(function () {
+  // Link web app Apps Script (hậu trường) — đổi ở đây nếu bạn triển khai lại thành link mới.
+  const API_URL = "https://script.google.com/macros/s/AKfycbz8tCYFIKaLaBfdNQRa9WmC7fzxH0rhgv3FnvbAzeXSYXbV9JHIqJxHYfh2xpleMaeeSA/exec";
+
+  let ITEMS = [];
+  let ENTRIES = [];
+  let PHASE_INFO = {};
+  let PRODUCT_LABEL = {};
+  const HOOK_TYPES = ["Phản bác giá", "Test làm quá tay", "Gọi đúng nỗi khổ", "Khám phá cá nhân", "Kiến thức/mẹo"];
+  const STATUS_OPTIONS = [
+    { value: "Chưa giao", cls: "todo" },
+    { value: "Đang làm", cls: "doing" },
+    { value: "Đã đăng", cls: "done" },
+  ];
+  const LS_KEY = "koc_admin_code";
+
+  let canEdit = false;
+  let ADMIN_CODE = "";
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  }
+  let toastTimer;
+  function toast(msg) {
+    const el = document.getElementById("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+  }
+  function statusClass(status) {
+    const found = STATUS_OPTIONS.find(s => s.value === status);
+    return found ? found.cls : "todo";
+  }
+
+  async function apiCall(action, payload) {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" }, // tránh preflight CORS mà Apps Script không trả lời được
+      body: JSON.stringify({ action, payload: payload || {} }),
+    });
+    const data = await res.json();
+    if (data && data.__error) throw new Error(data.__error);
+    return data;
+  }
+
+  // ---------------- Auth ----------------
+  function renderAuth() {
+    const el = document.getElementById("auth");
+    if (canEdit) {
+      el.innerHTML = `<span class="mono" style="font-size:12px;opacity:.85">🔓 Chế độ Admin</span>
+        <button type="button" class="btn on-accent" id="btn-logout">Đăng xuất</button>`;
+      document.getElementById("btn-logout").addEventListener("click", () => {
+        try { localStorage.removeItem(LS_KEY); } catch (e) {}
+        canEdit = false; ADMIN_CODE = "";
+        renderAuth(); renderContent(); renderQna();
+        toast("Đã đăng xuất");
+      });
+    } else {
+      el.innerHTML = `<button type="button" class="btn on-accent" id="btn-login-toggle">🔒 Đăng nhập Admin</button>
+        <div class="login-form" id="login-form">
+          <input type="password" id="f-admin-pass" placeholder="Mật khẩu admin">
+          <button type="button" class="btn on-accent" id="btn-login-go">Vào</button>
+        </div>`;
+      const toggleBtn = document.getElementById("btn-login-toggle");
+      const loginForm = document.getElementById("login-form");
+      toggleBtn.addEventListener("click", () => {
+        loginForm.classList.toggle("show");
+        if (loginForm.classList.contains("show")) document.getElementById("f-admin-pass").focus();
+      });
+      const doLogin = async () => {
+        const pass = document.getElementById("f-admin-pass").value.trim();
+        if (!pass) return;
+        try {
+          const res = await apiCall("verifyAdminLogin", { password: pass });
+          if (res.ok) {
+            canEdit = true; ADMIN_CODE = pass;
+            try { localStorage.setItem(LS_KEY, pass); } catch (e) {}
+            renderAuth(); renderContent(); renderQna();
+            toast("Đăng nhập thành công");
+          } else {
+            toast("Sai mật khẩu admin.");
+          }
+        } catch (e) {
+          toast("Lỗi: " + (e && e.message ? e.message : "không rõ"));
+        }
+      };
+      document.getElementById("btn-login-go").addEventListener("click", doLogin);
+      document.getElementById("f-admin-pass").addEventListener("keydown", ev => { if (ev.key === "Enter") doLogin(); });
+    }
+  }
+
+  async function tryAutoLogin() {
+    const fromUrl = new URLSearchParams(location.search).get("admin");
+    let candidate = fromUrl;
+    if (!candidate) {
+      try { candidate = localStorage.getItem(LS_KEY); } catch (e) {}
+    }
+    if (!candidate) return;
+    try {
+      const res = await apiCall("verifyAdminLogin", { password: candidate });
+      if (res.ok) {
+        canEdit = true; ADMIN_CODE = candidate;
+        try { localStorage.setItem(LS_KEY, candidate); } catch (e) {}
+        renderAuth(); renderContent(); renderQna();
+      } else if (!fromUrl) {
+        try { localStorage.removeItem(LS_KEY); } catch (e) {}
+      }
+    } catch (e) { /* offline/transient — stay logged out, don't clear saved code */ }
+  }
+
+  // ---------------- Nội dung kiến thức ----------------
+  function contentHeadHTML() {
+    if (!canEdit) return "";
+    return `<button type="button" class="btn primary" id="btn-add-item">+ Thêm thẻ mới</button>`;
+  }
+
+  function cardHTML(it) {
+    const sc = statusClass(it.status);
+    return `<div class="card" data-id="${it.id}">
+      <div class="item-top">
+        <span class="tag">${esc(PRODUCT_LABEL[it.product] || it.product)}</span>
+        <span class="hook-pill">${esc(it.hook || "")}</span>
+        ${canEdit ? `<span class="status-chip ${sc}">${esc(it.status || "Chưa giao")}</span>` : ""}
+      </div>
+      <h3>${esc(it.title)}</h3>
+      ${it.imageUrl ? `<img class="ref-image" src="${it.imageUrl}" alt="">` : ""}
+      <p class="fact">${esc(it.fact)}</p>
+      <details class="more">
+        <summary>Xem góc quay gợi ý &amp; nguồn</summary>
+        <div class="more-body">
+          <div><span class="k">Góc quay gợi ý</span><div>${esc(it.angle || "")}</div></div>
+          <div><span class="k">Mở đầu</span><div style="font-style:italic">"${esc(it.opener || "")}"</div></div>
+          <div><span class="k">Nguồn</span><div>${esc(it.source || "")}</div></div>
+          ${(it.deep || []).map(p => `<p>${esc(p)}</p>`).join("")}
+          ${(it.faq || []).map(f => `<div><b>Hỏi:</b> ${esc(f.q)}<br><b>Đáp:</b> ${esc(f.a)}</div>`).join("")}
+        </div>
+      </details>
+      <div class="card-actions">
+        <button type="button" class="btn ghost ask-btn" data-title="${esc(it.title)}">❓ Đặt câu hỏi về mục này</button>
+      </div>
+      ${canEdit ? `<div class="admin-block">
+        <div class="status-row">
+          <label class="mono" style="font-size:11px;color:var(--soft)">Trạng thái</label>
+          <select class="status-select" data-role="item-status">
+            ${STATUS_OPTIONS.map(s => `<option value="${s.value}" ${s.value === it.status ? "selected" : ""}>${s.value}</option>`).join("")}
+          </select>
+        </div>
+        <div class="note-box">
+          <label>💡 Góp ý (thêm / bớt / sửa)</label>
+          <textarea data-role="item-note" rows="2" placeholder="Ghi chú nhanh…">${esc(it.note || "")}</textarea>
+        </div>
+        <div class="field"><label>Ảnh minh họa</label><input type="file" data-role="item-image" accept="image/*"></div>
+        <div class="foot-row">
+          <button type="button" class="btn danger" data-role="item-del">Xóa thẻ</button>
+          <button type="button" class="btn ghost" data-role="item-edit">Sửa thẻ</button>
+        </div>
+      </div>` : ""}
+    </div>`;
+  }
+
+  function renderContent() {
+    document.getElementById("content-head-row").innerHTML = contentHeadHTML();
+    const addBtn = document.getElementById("btn-add-item");
+    if (addBtn) addBtn.addEventListener("click", () => openItemEditor(null));
+
+    const byPhase = {};
+    ITEMS.forEach(it => { const p = it.phase || 6; (byPhase[p] = byPhase[p] || []).push(it); });
+    const phases = Object.keys(byPhase).map(Number).sort((a, b) => a - b);
+    const list = document.getElementById("content-list");
+    list.innerHTML = phases.map(p => `
+      <div class="phase-head"><span class="phase-num">${p}</span><h2>${esc(PHASE_INFO[p] || "Khác")}</h2></div>
+      ${byPhase[p].map(cardHTML).join("")}
+    `).join("") || `<p class="empty">Chưa có thẻ kiến thức nào.</p>`;
+
+    list.querySelectorAll(".ask-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelector('[data-tab="qna"]').click();
+        document.getElementById("f-itemref").value = btn.dataset.title;
+        document.getElementById("f-question").focus();
+        document.getElementById("submit-card").scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    });
+
+    if (canEdit) {
+      list.querySelectorAll(".card").forEach(card => {
+        const id = card.dataset.id;
+        const item = ITEMS.find(i => i.id === id);
+        card.querySelector('[data-role="item-status"]').addEventListener("change", async e => {
+          const status = e.target.value;
+          try {
+            await apiCall("saveContentStatus", { id, adminCode: ADMIN_CODE, status });
+            item.status = status;
+            renderContent();
+            toast("Đã cập nhật trạng thái");
+          } catch (err) { toast("Lỗi: " + err.message); }
+        });
+        card.querySelector('[data-role="item-note"]').addEventListener("change", async e => {
+          const note = e.target.value.trim();
+          try {
+            await apiCall("saveContentNote", { id, adminCode: ADMIN_CODE, note });
+            item.note = note;
+            toast("Đã lưu góp ý");
+          } catch (err) { toast("Lỗi: " + err.message); }
+        });
+        card.querySelector('[data-role="item-image"]').addEventListener("change", e => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = async () => {
+            try {
+              const res = await apiCall("uploadContentImage", { id, adminCode: ADMIN_CODE, base64Data: reader.result, mimeType: file.type, fileName: file.name });
+              item.imageUrl = res.url;
+              renderContent();
+              toast("Đã tải ảnh lên");
+            } catch (err) { toast("Lỗi ảnh: " + err.message); }
+          };
+          reader.readAsDataURL(file);
+        });
+        card.querySelector('[data-role="item-edit"]').addEventListener("click", () => openItemEditor(item));
+        card.querySelector('[data-role="item-del"]').addEventListener("click", async () => {
+          if (!confirm("Xóa thẻ này?")) return;
+          try {
+            await apiCall("deleteContentItem", { id, adminCode: ADMIN_CODE });
+            ITEMS = ITEMS.filter(i => i.id !== id);
+            renderContent();
+            toast("Đã xóa thẻ");
+          } catch (err) { toast("Lỗi: " + err.message); }
+        });
+      });
+    }
+
+    const datalist = document.getElementById("item-titles-list");
+    datalist.innerHTML = ITEMS.map(it => `<option value="${esc(it.title)}">`).join("");
+  }
+
+  function openItemEditor(item) {
+    const isNew = !item;
+    const d = item || { id: "", product: "soy", pillar: "knowledge", phase: 6, title: "", fact: "", angle: "", hook: HOOK_TYPES[0], opener: "", source: "", deep: [], faq: [] };
+    const overlay = document.createElement("div");
+    overlay.className = "overlay";
+    overlay.innerHTML = `<div class="dialog" role="dialog" aria-modal="true">
+      <h2>${isNew ? "Thêm thẻ kiến thức mới" : "Sửa thẻ kiến thức"}</h2>
+      <div class="field-row">
+        <div class="field"><label>Sản phẩm</label>
+          <select id="f-product">
+            <option value="soy" ${d.product === "soy" ? "selected" : ""}>Đậu nành</option>
+            <option value="cassava" ${d.product === "cassava" ? "selected" : ""}>Sắn</option>
+            <option value="both" ${d.product === "both" ? "selected" : ""}>Cả hai</option>
+          </select>
+        </div>
+        <div class="field"><label>Trụ nội dung</label>
+          <select id="f-pillar">
+            <option value="knowledge" ${d.pillar === "knowledge" ? "selected" : ""}>Kiến thức</option>
+            <option value="pain" ${d.pillar === "pain" ? "selected" : ""}>Pain điểm</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>Thuộc bước nào</label>
+        <select id="f-phase">${[1, 2, 3, 4, 5, 6].map(p => `<option value="${p}" ${p === d.phase ? "selected" : ""}>Bước ${p} — ${esc(PHASE_INFO[p] || "")}</option>`).join("")}</select>
+      </div>
+      <div class="field"><label>Tiêu đề</label><input id="f-title" value="${esc(d.title)}"></div>
+      <div class="field"><label>Sự thật / pain điểm</label><textarea id="f-fact">${esc(d.fact)}</textarea></div>
+      <div class="field"><label>Góc quay gợi ý</label><textarea id="f-angle">${esc(d.angle)}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>Kiểu hook</label>
+          <select id="f-hook">${HOOK_TYPES.map(h => `<option ${h === d.hook ? "selected" : ""}>${esc(h)}</option>`).join("")}</select>
+        </div>
+        <div class="field"><label>Câu mở đầu</label><input id="f-opener" value="${esc(d.opener)}"></div>
+      </div>
+      <div class="field"><label>Nguồn</label><input id="f-source" value="${esc(d.source)}"></div>
+      <div class="field"><label>Đào sâu thêm — mỗi đoạn một dòng</label><textarea id="f-deep" rows="4">${esc((d.deep || []).join("\n"))}</textarea></div>
+      <div class="field"><label>Hỏi đáp — "Hỏi: ..." rồi "Đáp: ...", cách nhau 1 dòng trống</label><textarea id="f-faq" rows="4">${esc((d.faq || []).map(f => `Hỏi: ${f.q}\nĐáp: ${f.a}`).join("\n\n"))}</textarea></div>
+      <div class="dialog-actions">
+        <button type="button" class="btn ghost" id="f-cancel">Hủy</button>
+        <button type="button" class="btn primary" id="f-save">Lưu</button>
+      </div>
+    </div>`;
+    document.body.appendChild(overlay);
+    overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+    overlay.querySelector("#f-cancel").addEventListener("click", () => overlay.remove());
+    overlay.querySelector("#f-save").addEventListener("click", async () => {
+      const title = overlay.querySelector("#f-title").value.trim();
+      const fact = overlay.querySelector("#f-fact").value.trim();
+      if (!title || !fact) { toast("Cần ít nhất tiêu đề và sự thật."); return; }
+      const payload = {
+        id: isNew ? "" : d.id,
+        adminCode: ADMIN_CODE,
+        product: overlay.querySelector("#f-product").value,
+        pillar: overlay.querySelector("#f-pillar").value,
+        phase: parseInt(overlay.querySelector("#f-phase").value, 10),
+        title, fact,
+        angle: overlay.querySelector("#f-angle").value.trim(),
+        hook: overlay.querySelector("#f-hook").value,
+        opener: overlay.querySelector("#f-opener").value.trim(),
+        source: overlay.querySelector("#f-source").value.trim(),
+        deep: overlay.querySelector("#f-deep").value.split("\n").map(s => s.trim()).filter(Boolean),
+        faq: overlay.querySelector("#f-faq").value.split(/\n\s*\n/).map(block => {
+          const lines = block.split("\n").map(s => s.trim()).filter(Boolean);
+          const q = lines.find(l => /^h(ỏi)?:/i.test(l));
+          const a = lines.find(l => /^đ(áp)?:/i.test(l));
+          if (!q || !a) return null;
+          return { q: q.replace(/^h(ỏi)?:\s*/i, ""), a: a.replace(/^đ(áp)?:\s*/i, "") };
+        }).filter(Boolean),
+      };
+      try {
+        const res = await apiCall("saveContentItem", payload);
+        const saved = Object.assign({}, payload, { id: res.id, status: d.status || "Chưa giao", note: d.note || "", imageUrl: d.imageUrl || "" });
+        delete saved.adminCode;
+        if (isNew) ITEMS.push(saved);
+        else ITEMS = ITEMS.map(i => i.id === saved.id ? saved : i);
+        overlay.remove();
+        renderContent();
+        toast(isNew ? "Đã thêm thẻ mới" : "Đã lưu chỉnh sửa");
+      } catch (err) {
+        toast("Lỗi: " + (err && err.message ? err.message : "không rõ"));
+      }
+    });
+  }
+
+  // ---------------- Hỏi đáp ----------------
+  function entryStatus(e) { return e.answer && String(e.answer).trim() ? "answered" : "new"; }
+
+  function entryHTML(e) {
+    const status = entryStatus(e);
+    return `<div class="card entry" data-id="${e.id}">
+      <div class="entry-top">
+        <span class="chip ${status}">${status === "answered" ? "Đã xử lý" : "Chưa xử lý"}</span>
+        <span class="koc-name">${esc(e.kocName || "KOC ẩn danh")}</span>
+        <span class="date mono">${new Date(e.createdAt).toLocaleDateString("vi-VN")}</span>
+      </div>
+      ${e.itemRef ? `<div class="item-ref">Liên quan: ${esc(e.itemRef)}</div>` : ""}
+      <div class="question">${esc(e.question)}</div>
+      ${e.imageUrl ? `<img class="ref-image" src="${e.imageUrl}" alt="">` : ""}
+      ${e.answer ? `<div class="answer-view"><b>Trả lời:</b> ${esc(e.answer)}</div>` : ""}
+      ${canEdit ? `<div class="admin-block">
+        <div class="field"><label>Câu trả lời (Lưu = đánh dấu đã xử lý)</label><textarea data-role="q-answer">${esc(e.answer || "")}</textarea></div>
+        <div class="field"><label>Ảnh tư liệu</label><input type="file" data-role="q-image" accept="image/*"></div>
+        <div class="foot-row">
+          <button type="button" class="btn danger" data-role="q-del">Xóa</button>
+          <button type="button" class="btn primary" data-role="q-save">Lưu</button>
+        </div>
+      </div>` : ""}
+    </div>`;
+  }
+
+  function renderQna() {
+    document.getElementById("qna-count").textContent = ENTRIES.length;
+    const list = document.getElementById("q-list");
+    const sorted = ENTRIES.slice().sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    list.innerHTML = sorted.map(entryHTML).join("") || `<p class="empty">Chưa có câu hỏi nào — hãy là người đầu tiên.</p>`;
+
+    if (canEdit) {
+      list.querySelectorAll(".entry").forEach(card => {
+        const id = card.dataset.id;
+        const entry = ENTRIES.find(x => x.id === id);
+        const saveBtn = card.querySelector('[data-role="q-save"]');
+        const delBtn = card.querySelector('[data-role="q-del"]');
+        saveBtn.addEventListener("click", async () => {
+          saveBtn.disabled = true;
+          const answer = card.querySelector('[data-role="q-answer"]').value.trim();
+          const fileInput = card.querySelector('[data-role="q-image"]');
+          try {
+            await apiCall("saveAnswer", { id, adminCode: ADMIN_CODE, answer });
+            entry.answer = answer;
+            if (fileInput.files.length) {
+              const file = fileInput.files[0];
+              const reader = new FileReader();
+              reader.onload = async () => {
+                try {
+                  const res = await apiCall("uploadImage", { id, adminCode: ADMIN_CODE, base64Data: reader.result, mimeType: file.type, fileName: file.name });
+                  entry.imageUrl = res.url;
+                  renderQna();
+                  toast("Đã lưu câu trả lời + ảnh");
+                } catch (err) { toast("Lỗi ảnh: " + err.message); }
+              };
+              reader.readAsDataURL(file);
+            } else {
+              renderQna();
+              toast("Đã lưu câu trả lời");
+            }
+          } catch (err) { toast("Lỗi: " + err.message); saveBtn.disabled = false; }
+        });
+        delBtn.addEventListener("click", async () => {
+          if (!confirm("Xóa câu hỏi này?")) return;
+          try {
+            await apiCall("deleteEntry", { id, adminCode: ADMIN_CODE });
+            ENTRIES = ENTRIES.filter(x => x.id !== id);
+            renderQna();
+            toast("Đã xóa");
+          } catch (err) { toast("Lỗi: " + err.message); }
+        });
+      });
+    }
+  }
+
+  document.getElementById("btn-submit").addEventListener("click", async () => {
+    const question = document.getElementById("f-question").value.trim();
+    if (!question) { toast("Cần nhập câu hỏi."); return; }
+    const btn = document.getElementById("btn-submit");
+    btn.disabled = true;
+    btn.textContent = "Đang gửi…";
+    try {
+      const entry = await apiCall("submitQuestion", {
+        kocName: document.getElementById("f-koc").value.trim(),
+        question,
+        itemRef: document.getElementById("f-itemref").value.trim(),
+      });
+      ENTRIES.unshift(entry);
+      document.getElementById("f-koc").value = "";
+      document.getElementById("f-question").value = "";
+      document.getElementById("f-itemref").value = "";
+      renderQna();
+      const el = document.querySelector('.entry[data-id="' + entry.id + '"]');
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        el.classList.add("just-added");
+        setTimeout(() => el.classList.remove("just-added"), 3000);
+      }
+      toast("Đã gửi câu hỏi của bạn ✓");
+    } catch (err) {
+      toast("Lỗi: " + (err && err.message ? err.message : "không rõ"));
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Gửi câu hỏi";
+    }
+  });
+
+  // ---------------- Tabs ----------------
+  document.getElementById("tabs").querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+      document.getElementById("tabs").querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+      document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+      document.getElementById("tab-" + btn.dataset.tab).classList.add("active");
+    });
+  });
+
+  // ---------------- Khởi động ----------------
+  renderAuth();
+  fetch(API_URL + "?action=bootstrap")
+    .then(r => r.json())
+    .then(boot => {
+      if (boot.__error) throw new Error(boot.__error);
+      ITEMS = boot.contentItems;
+      ENTRIES = boot.entries;
+      PHASE_INFO = boot.phaseInfo;
+      PRODUCT_LABEL = boot.productLabel;
+      document.getElementById("app-loading").hidden = true;
+      document.getElementById("app-wrap").hidden = false;
+      renderContent();
+      renderQna();
+      return tryAutoLogin();
+    })
+    .catch(err => {
+      document.getElementById("app-loading").hidden = true;
+      document.getElementById("app-error").hidden = false;
+      console.error(err);
+    });
+})();
 </script>
 </body>
 </html>
