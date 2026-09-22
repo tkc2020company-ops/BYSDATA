@@ -181,13 +181,41 @@
     return found ? found.cls : "todo";
   }
 
-  async function apiCall(action, payload) {
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  // Apps Script thỉnh thoảng trả về trang lỗi HTML của Google thay vì JSON
+  // (nghẽn tạm thời phía Google, không phải lỗi code) — thử lại vài lần
+  // trước khi báo lỗi thật cho người dùng.
+  async function apiCall(action, payload, attempt) {
+    attempt = attempt || 1;
     const res = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" }, // tránh preflight CORS mà Apps Script không trả lời được
       body: JSON.stringify({ action, payload: payload || {} }),
     });
-    const data = await res.json();
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (attempt < 3) { await sleep(600 * attempt); return apiCall(action, payload, attempt + 1); }
+      throw new Error("Google đang phản hồi chậm, thử lại sau vài giây.");
+    }
+    if (data && data.__error) throw new Error(data.__error);
+    return data;
+  }
+
+  async function apiGet(action, attempt) {
+    attempt = attempt || 1;
+    const res = await fetch(API_URL + "?action=" + action);
+    const text = await res.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      if (attempt < 3) { await sleep(600 * attempt); return apiGet(action, attempt + 1); }
+      throw new Error("Google đang phản hồi chậm, thử lại sau vài giây.");
+    }
     if (data && data.__error) throw new Error(data.__error);
     return data;
   }
@@ -585,10 +613,8 @@
 
   // ---------------- Khởi động ----------------
   renderAuth();
-  fetch(API_URL + "?action=bootstrap")
-    .then(r => r.json())
+  apiGet("bootstrap")
     .then(boot => {
-      if (boot.__error) throw new Error(boot.__error);
       ITEMS = boot.contentItems;
       ENTRIES = boot.entries;
       PHASE_INFO = boot.phaseInfo;
