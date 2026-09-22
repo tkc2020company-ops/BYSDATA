@@ -36,7 +36,14 @@
   nav.tabs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
   section.tab-panel { display: none; }
   section.tab-panel.active { display: block; }
-  .content-head-row { display: flex; justify-content: flex-end; margin-bottom: 4px; }
+  .content-head-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
+  .filters { display: flex; flex-wrap: wrap; gap: 14px 20px; }
+  .seg-group { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .seg-label { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--soft); }
+  .seg { display: flex; gap: 4px; }
+  .seg button { font: inherit; font-size: 12px; font-weight: 600; background: var(--surface); border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: transparent; }
+  .count-live { font-size: 12px; color: var(--soft); }
   .phase-head { display: flex; align-items: center; gap: 10px; margin: 26px 0 4px; }
   .phase-head:first-child { margin-top: 0; }
   .phase-num { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; font-weight: 700; background: var(--accent); color: var(--accent-ink); width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; flex: none; }
@@ -96,7 +103,6 @@
   .dialog-close { background: none; border: none; font-size: 22px; line-height: 1; color: var(--soft); cursor: pointer; padding: 4px 8px; }
   .dialog-close:hover { color: var(--ink); }
   .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
-  #app-loading { text-align: center; padding: 60px 20px; color: var(--soft); }
   @media (max-width: 480px) {
     .date { margin-left: 0; }
     .field-row { grid-template-columns: 1fr; }
@@ -117,15 +123,37 @@
   </div>
 </header>
 
-<div class="wrap" id="app-wrap" hidden>
+<div class="wrap" id="app-wrap">
   <nav class="tabs" id="tabs">
     <button type="button" data-tab="content" aria-pressed="true">Kiến thức sản phẩm</button>
     <button type="button" data-tab="qna" aria-pressed="false">Hỏi đáp (<span id="qna-count">0</span>)</button>
   </nav>
 
   <section class="tab-panel active" id="tab-content">
-    <div class="content-head-row" id="content-head-row"></div>
-    <div id="content-list"></div>
+    <div class="content-head-row">
+      <div class="filters">
+        <div class="seg-group">
+          <span class="seg-label">Sản phẩm</span>
+          <div class="seg" data-filter="product">
+            <button type="button" data-value="all" aria-pressed="true">Tất cả</button>
+            <button type="button" data-value="soy" aria-pressed="false">Đậu nành</button>
+            <button type="button" data-value="cassava" aria-pressed="false">Sắn</button>
+            <button type="button" data-value="both" aria-pressed="false">Cả hai</button>
+          </div>
+        </div>
+        <div class="seg-group">
+          <span class="seg-label">Trụ nội dung</span>
+          <div class="seg" data-filter="pillar">
+            <button type="button" data-value="all" aria-pressed="true">Tất cả</button>
+            <button type="button" data-value="knowledge" aria-pressed="false">Kiến thức</button>
+            <button type="button" data-value="pain" aria-pressed="false">Pain điểm</button>
+          </div>
+        </div>
+        <span class="count-live">Hiện <b id="content-count">0</b> / <span id="content-total">0</span></span>
+      </div>
+      <div id="content-head-row"></div>
+    </div>
+    <div id="content-list"><p class="empty" id="content-loading">Đang tải nội dung… (Apps Script đôi khi mất vài giây)</p></div>
   </section>
 
   <section class="tab-panel" id="tab-qna">
@@ -144,9 +172,6 @@
     <div id="q-list"></div>
   </section>
 </div>
-
-<div class="wrap" id="app-loading"><p>Đang tải…</p></div>
-<div class="wrap" id="app-error" hidden><p class="empty">Không tải được dữ liệu. Kiểm tra kết nối mạng và tải lại trang.</p></div>
 
 <div class="toast" id="toast"></div>
 
@@ -169,6 +194,11 @@
 
   let canEdit = false;
   let ADMIN_CODE = "";
+  let filters = { product: "all", pillar: "all" };
+  function passesFilter(it) {
+    return (filters.product === "all" || it.product === filters.product) &&
+      (filters.pillar === "all" || it.pillar === filters.pillar);
+  }
 
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -345,14 +375,18 @@
     const addBtn = document.getElementById("btn-add-item");
     if (addBtn) addBtn.addEventListener("click", () => openItemEditor(null));
 
+    const filtered = ITEMS.filter(passesFilter);
+    document.getElementById("content-count").textContent = filtered.length;
+    document.getElementById("content-total").textContent = ITEMS.length;
+
     const byPhase = {};
-    ITEMS.forEach(it => { const p = it.phase || 6; (byPhase[p] = byPhase[p] || []).push(it); });
+    filtered.forEach(it => { const p = it.phase || 6; (byPhase[p] = byPhase[p] || []).push(it); });
     const phases = Object.keys(byPhase).map(Number).sort((a, b) => a - b);
     const list = document.getElementById("content-list");
     list.innerHTML = phases.map(p => `
       <div class="phase-head"><span class="phase-num">${p}</span><h2>${esc(PHASE_INFO[p] || "Khác")}</h2></div>
       ${byPhase[p].map(cardHTML).join("")}
-    `).join("") || `<p class="empty">Chưa có thẻ kiến thức nào.</p>`;
+    `).join("") || `<p class="empty">Không có thẻ nào khớp bộ lọc.</p>`;
 
     list.querySelectorAll(".ask-btn").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -623,25 +657,42 @@
   });
   document.getElementById("btn-back-to-content").addEventListener("click", () => switchTab("content"));
 
-  // ---------------- Khởi động ----------------
-  renderAuth();
-  apiGet("bootstrap")
-    .then(boot => {
-      ITEMS = boot.contentItems;
-      ENTRIES = boot.entries;
-      PHASE_INFO = boot.phaseInfo;
-      PRODUCT_LABEL = boot.productLabel;
-      document.getElementById("app-loading").hidden = true;
-      document.getElementById("app-wrap").hidden = false;
-      renderContent();
-      renderQna();
-      return tryAutoLogin();
-    })
-    .catch(err => {
-      document.getElementById("app-loading").hidden = true;
-      document.getElementById("app-error").hidden = false;
-      console.error(err);
+  document.querySelectorAll(".seg").forEach(seg => {
+    const key = seg.dataset.filter;
+    seg.querySelectorAll("button").forEach(btn => {
+      btn.addEventListener("click", () => {
+        seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+        filters[key] = btn.dataset.value;
+        renderContent();
+      });
     });
+  });
+
+  // ---------------- Khởi động ----------------
+  // Khung trang (tab, nút quay lại) hiện ngay; chỉ danh sách bên trong chờ tải dữ liệu,
+  // để dù Apps Script tải chậm, người dùng vẫn thao tác được (chuyển tab, xem form...).
+  function loadBootstrap() {
+    document.getElementById("content-list").innerHTML = `<p class="empty">Đang tải nội dung… (Apps Script đôi khi mất vài giây)</p>`;
+    apiGet("bootstrap")
+      .then(boot => {
+        ITEMS = boot.contentItems;
+        ENTRIES = boot.entries;
+        PHASE_INFO = boot.phaseInfo;
+        PRODUCT_LABEL = boot.productLabel;
+        renderContent();
+        renderQna();
+        return tryAutoLogin();
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("content-list").innerHTML = `<p class="empty">Không tải được nội dung (Google đang phản hồi chậm).</p>
+          <div style="text-align:center"><button type="button" class="btn primary" id="btn-retry-bootstrap">Thử lại</button></div>`;
+        document.getElementById("btn-retry-bootstrap").addEventListener("click", loadBootstrap);
+      });
+  }
+
+  renderAuth();
+  loadBootstrap();
 })();
 </script>
 </body>
